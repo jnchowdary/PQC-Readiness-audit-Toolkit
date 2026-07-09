@@ -94,11 +94,7 @@ function inspect(domain) {
 }
 
 module.exports = async (req, res) => {
-  // Tighten this to your GitHub Pages origin in production
-  // e.g. "https://diarkaquantum.co.uk" or "https://<user>.github.io"
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "no-store");
-  if (req.method === "OPTIONS") { res.status(204).end(); return; }
+  const origin = req.headers.origin; const allowedOrigins = ["https://diarkaquantum.co.uk", "https://pqc.diarkaquantum.co.uk"]; if (allowedOrigins.includes(origin)) { res.setHeader("Access-Control-Allow-Origin", origin); } res.setHeader("Vary", "Origin"); res.setHeader("Cache-Control", "no-store"); if (req.method === "OPTIONS") { res.status(204).end(); return; }
 
   const domain = cleanDomain((req.query && req.query.domain) || "");
   if (!validHost(domain)) { res.status(400).json({ error: "Enter a valid public domain" }); return; }
