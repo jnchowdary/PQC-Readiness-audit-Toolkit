@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diarka Quantum · PQC Quick Check</title>
 <link rel="icon" href="https://diarkaquantum.co.uk/diarka-logo-header-180w.png">
+<title>Diarka Quantum · PQC Quick Check</title>
 <style>
   :root{
     --navy:#0B1230; --navy2:#101a40; --card:#141d47; --card2:#0f1738;
@@ -81,18 +81,25 @@
   .cta a{display:inline-block;background:var(--cyan);color:var(--navy);font-weight:700;
        text-decoration:none;padding:11px 20px;border-radius:9px;font-size:14px}
   .cta .alt{background:transparent;padding:0;color:var(--cyan);font-size:13px;margin-left:16px;text-decoration:none}
+  @media (max-width:520px){
+    .fact{flex-direction:column;gap:5px}
+    .fact .k{flex:none}
+    .fact .v{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+    .tag{margin-left:0}
+    .cta .alt{display:block;margin:12px 0 0}
+  }
   footer{color:var(--dim);font-size:11.5px;margin-top:26px;text-align:center;line-height:1.6}
   footer a{color:var(--mute)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <a href="https://diarkaquantum.co.uk" class="brand" aria-label="Diarka Quantum">     <img src="https://diarkaquantum.co.uk/diarka-logo-header-180w.png" alt="Diarka Quantum">   </a>
+  <a href="https://diarkaquantum.co.uk" class="brand" aria-label="Diarka Quantum"><img src="https://diarkaquantum.co.uk/diarka-logo-header-180w.png" alt="Diarka Quantum"></a>
   <div class="eyebrow">PQC Readiness · Quick Check</div>
   <h1>Is your front door <em>quantum-ready?</em></h1>
-  <div class="sub">Enter a public domain. We inspect its TLS — the encryption protecting traffic to it —
-  and show where it sits against the NCSC's 2028 post-quantum deadline. This checks one endpoint;
-  a full Diarka audit covers your whole estate.</div>
+  <div class="sub">Enter a public domain. We inspect its TLS, the encryption protecting traffic to it,
+  and show where it sits against the NCSC's post-quantum migration timeline, which runs to 2035.
+  This checks one endpoint; a full Diarka audit covers your whole estate.</div>
 
   <div class="panel">
     <div class="field">
@@ -103,7 +110,7 @@
     <div class="hint">We read only what any browser already negotiates with the site. No login, nothing stored.</div>
     <div class="samplebanner" id="sampleBanner" style="display:none">
       <b>SAMPLE MODE.</b> No live scanner is connected, so results below are an illustrative example,
-      not a real scan of the domain entered. Wire the backend function to make this live.
+      not a real scan of the domain entered. Set API_BASE in the page, or open it from its Vercel URL, to make this live.
     </div>
   </div>
 
@@ -117,159 +124,189 @@
 
 <script>
 /* ============================================================================
-   CONFIG — set FUNCTION_URL to your deployed Netlify function to go live.
-   e.g. "/.netlify/functions/pqc-check"  (same-site) or a full https URL.
-   Leave "" to run in clearly-labelled SAMPLE mode.
+   CONFIG
+   API_BASE: leave "" when this page is served by the same Vercel project as
+   api/pqc-check.js (recommended). When the page lives elsewhere, e.g. on
+   diarkaquantum.co.uk or opened as a local file, set it to the Vercel URL,
+   e.g. "https://diarka-pqc-check.vercel.app".
 ============================================================================ */
-const FUNCTION_URL = "/api/pqc-check";  // same-origin on Vercel
+const API_BASE = "";
 const CONTACT_EMAIL = "nageshj@diarkaquantum.co.uk";
 const SITE = "diarkaquantum.co.uk";
 
+const FUNCTION_URL = API_BASE.replace(/\/$/, "") + "/api/pqc-check";
+const NO_BACKEND = !API_BASE && location.protocol === "file:";
+
 const $ = s => document.querySelector(s);
 const out = $("#out"), btn = $("#go"), input = $("#domain");
+const NA = "n/a";
 
 btn.addEventListener("click", run);
 input.addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 
 function cleanDomain(v){
   return (v||"").trim().toLowerCase()
-    .replace(/^https?:\/\//,"").replace(/\/.*$/,"").replace(/^www\./,"");
+    .replace(/^https?:\/\//,"").replace(/[/?#].*$/,"").replace(/:\d+$/,"").replace(/\.$/,"");
+}
+function validDomain(d){ return d.length <= 253 && d.includes(".") && /^[a-z0-9.-]+$/.test(d); }
+function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function showError(title, msg){
+  out.innerHTML = `<div class="panel"><div class="grade">
+    <div class="ring" style="background:#F5A6231A;color:#F5A623;border:2px solid #F5A623">!</div>
+    <div><h3>${esc(title)}</h3><p>${msg}</p></div></div></div>`;
 }
 
 async function run(){
   const domain = cleanDomain(input.value);
-  if(!domain || !domain.includes(".")){ input.focus(); input.style.borderColor="#E5484D"; return; }
+  if(!validDomain(domain)){ input.focus(); input.style.borderColor="#E5484D"; return; }
   input.style.borderColor="";
-  btn.disabled = true; btn.textContent = "Checking…";
   out.style.display = "block";
-  out.innerHTML = `
-    <div class="panel">
-      <div class="scanline"><span class="spin"></span> Connecting to <b>&nbsp;${domain}</b> over TLS…</div>
-      <div class="scanline" style="opacity:.6"><span class="spin"></span> Reading certificate &amp; negotiated cipher…</div>
-    </div>`;
 
   let data, sample = false;
-  if(!FUNCTION_URL){
-    // No scanner wired: honest, clearly-labelled illustrative result.
+  if(NO_BACKEND){
+    // Opened as a local file with no scanner URL set: clearly labelled sample.
     sample = true; data = sampleScan(domain); $("#sampleBanner").style.display = "block";
-  } else {
-    try{
-      const r = await fetch(FUNCTION_URL + "?domain=" + encodeURIComponent(domain));
-      data = await r.json();
-      if(!r.ok || data.error) throw new Error(data.error || "scan failed");
-    }catch(err){
-      // Real backend, real failure — show a real error, never fake a result.
-      out.innerHTML = `<div class="panel"><div class="grade">
-        <div class="ring" style="background:#F5A6231A;color:#F5A623;border:2px solid #F5A623">—</div>
-        <div><h3>Couldn't complete the check</h3>
-        <p>${(""+err.message).replace(/[<>]/g,"")} — for <span class="dom">${domain}</span>.
-        Check the domain is reachable on port 443 and try again.</p></div></div></div>`;
-      btn.disabled=false; btn.textContent="Check"; return;
-    }
+    render(domain, data, sample); return;
   }
-  setTimeout(()=>{ render(domain, data, sample); btn.disabled=false; btn.textContent="Check"; }, sample?650:50);
+
+  btn.disabled = true; btn.textContent = "Checking…";
+  out.innerHTML = `
+    <div class="panel">
+      <div class="scanline"><span class="spin"></span> Connecting to <b>&nbsp;${esc(domain)}</b> over TLS…</div>
+      <div class="scanline" style="opacity:.6"><span class="spin"></span> Testing post-quantum key exchange…</div>
+    </div>`;
+
+  let r;
+  try{
+    r = await fetch(FUNCTION_URL + "?domain=" + encodeURIComponent(domain));
+  }catch(err){
+    // The scanner itself could not be reached. Not the visitor's domain's fault.
+    showError("Scanner unavailable", "The checking service didn't respond. Please try again in a moment.");
+    btn.disabled=false; btn.textContent="Check"; return;
+  }
+  try{ data = await r.json(); }catch(e){ data = null; }
+  btn.disabled=false; btn.textContent="Check";
+
+  if(!data){
+    showError("Scanner unavailable", "The checking service returned an unexpected response. Please try again in a moment.");
+    return;
+  }
+  if(!r.ok || data.error){
+    showError("Couldn't complete the check",
+      `${esc(data.error || "Scan failed")} for <span class="dom">${esc(domain)}</span>.
+       Check the domain is correct and serves HTTPS, then try again.`);
+    return;
+  }
+  render(data.domain || domain, data, sample);
 }
 
 /* ---- grading from raw detected facts ---- */
 function grade(d){
   const flags = [];
   // classical hygiene (fails today, before quantum)
-  if(d.tlsVersion && /TLSv1(\.0|\.1)?$/.test(d.tlsVersion) && d.tlsVersion!=="TLSv1.2" && d.tlsVersion!=="TLSv1.3")
-    flags.push(["TLS "+d.tlsVersion.replace("TLSv","")+" is deprecated", "warn"]);
-  if(d.cert && /sha1/i.test(d.cert.sigAlg||"")) flags.push(["SHA-1 certificate signature is deprecated","warn"]);
-  if(d.cert && d.cert.keyType==="RSA" && d.cert.keySize && d.cert.keySize<2048)
-    flags.push(["RSA key below 2048 bits","warn"]);
+  if(d.tlsVersion && /^TLSv1(\.0|\.1)?$/.test(d.tlsVersion))
+    flags.push("TLS "+d.tlsVersion.replace("TLSv","")+" is deprecated");
+  if(d.cert && d.cert.keyType && /^RSA/.test(d.cert.keyType) && d.cert.keySize && d.cert.keySize<2048)
+    flags.push("RSA key below 2048 bits");
 
-  // quantum status — asymmetric crypto is Shor-breakable
-  const certVuln = d.cert && (d.cert.keyType==="RSA" || d.cert.keyType==="EC" || d.cert.keyType==="ECDSA");
-  const kxVuln = d.cipher && /ECDHE|DHE|RSA/i.test(d.cipher.kxFamily||d.cipher.name||"");
-  const pqcDetected = !!d.pqcKeyExchange;
+  // quantum status: RSA and elliptic-curve public-key crypto is Shor-breakable
+  const certVuln = !!(d.cert && /^(RSA|EC|ECDSA)/.test(d.cert.keyType||""));
+  const pq = d.pqcKeyExchange; // true | false | null (not tested)
 
-  let tier, ring, ringbg, headline, blurb;
-  if(pqcDetected){
-    tier="ok"; ring="PQ"; ringbg="var(--ok)";
-    headline="Post-quantum protection detected";
-    blurb="This endpoint already negotiates a post-quantum key exchange. Ahead of the field.";
-  } else {
-    tier="vuln"; ring="!"; ringbg="var(--p1)";
+  let ring, ringbg, headline, blurb;
+  if(pq === true){
+    ring="PQ"; ringbg="var(--ok)";
+    headline="Post-quantum key exchange in place";
+    blurb="Traffic to this endpoint is protected against harvest-now-decrypt-later. The certificate is still classical, which is normal today: post-quantum certificates are not yet deployed on the public web.";
+  } else if(pq === false){
+    ring="!"; ringbg="var(--p1)";
     headline="Not yet quantum-safe";
-    blurb="This endpoint relies on classical public-key cryptography that a quantum computer is expected to break.";
+    blurb="This endpoint negotiates only classical key exchange, which a sufficiently capable quantum computer is expected to break.";
+  } else {
+    ring="?"; ringbg="var(--p2)";
+    headline="Post-quantum support not confirmed";
+    blurb="We read the certificate and protocol, but couldn't confirm whether this endpoint supports post-quantum key exchange. "+esc(d.pqcNote||"");
   }
-  return {flags, certVuln, kxVuln, pqcDetected, tier, ring, ringbg, headline, blurb};
+  return {flags, certVuln, pq, ring, ringbg, headline, blurb};
 }
 
-function tagFor(vuln){ return vuln
-  ? '<span class="tag t-vuln">Quantum-vulnerable</span>'
-  : '<span class="tag t-ok">Quantum-safe</span>'; }
+function tag(state){
+  if(state==="vuln") return '<span class="tag t-vuln">Quantum-vulnerable</span>';
+  if(state==="ok")   return '<span class="tag t-ok">Quantum-safe</span>';
+  return '<span class="tag t-warn">Not tested</span>';
+}
 
 function render(domain, d, sample){
   const g = grade(d);
   const cert = d.cert||{};
-  const certStr = cert.keyType ? `${cert.keyType}${cert.keySize? "-"+cert.keySize:""}` : "—";
-  const kxStr = (d.cipher && (d.cipher.kxFamily||d.cipher.name)) || "—";
+  const certStr = cert.keyType ? `${cert.keyType}${cert.keySize? "-"+cert.keySize:""}` : NA;
+  const kxStr = (d.cipher && (d.cipher.kxFamily||d.cipher.name)) || NA;
+  const kxState = g.pq===true ? "ok" : g.pq===false ? "vuln" : "unknown";
 
-  const flagsHtml = g.flags.length ? g.flags.map(f=>
-     `<div class="fact"><div class="k">Hygiene flag</div><div class="v">${f[0]}
-        <span class="tag t-warn">Fails today's baseline</span></div></div>`).join("") : "";
+  const flagsHtml = g.flags.map(f=>
+     `<div class="fact"><div class="k">Hygiene flag</div><div class="v">${esc(f)}
+        <span class="tag t-warn">Fails today's baseline</span></div></div>`).join("");
+
+  const ncsc = g.pq===true
+    ? "This endpoint is ahead of most. The NCSC timeline is about the whole organisation, though: a full cryptographic inventory and migration plan by 2028, priority migrations by 2031, everything by 2035. One protected front door doesn't show the rest of the estate."
+    : "Every UK organisation is expected to have a cryptographic inventory and migration plan by 2028, priority migrations complete by 2031, and full migration by 2035. This endpoint is one item on that inventory.";
 
   out.innerHTML = `
   <div class="panel">
     <div class="grade">
       <div class="ring" style="background:${g.ringbg}1A;color:${g.ringbg};border:2px solid ${g.ringbg}">${g.ring}</div>
       <div>
-        <h3>${g.headline}</h3>
-        <p><span class="dom">${domain}</span> &nbsp;·&nbsp; scanned ${new Date().toLocaleString('en-GB')}</p>
+        <h3>${g.headline}${sample?" (sample)":""}</h3>
+        <p><span class="dom">${esc(domain)}</span> &nbsp;·&nbsp; ${sample?"illustrative result":"scanned "+new Date().toLocaleString('en-GB')}</p>
       </div>
     </div>
+    <p class="honest" style="margin-top:12px">${g.blurb}</p>
 
     <div class="facts">
       <div class="fact"><div class="k">TLS version</div>
-        <div class="v"><code>${d.tlsVersion||"—"}</code></div></div>
-      <div class="fact"><div class="k">Certificate key</div>
-        <div class="v"><code>${certStr}</code> ${tagFor(g.certVuln)}</div></div>
-      <div class="fact"><div class="k">Signature algorithm</div>
-        <div class="v"><code>${cert.sigAlg||"—"}</code> ${tagFor(g.certVuln)}</div></div>
+        <div class="v"><code>${esc(d.tlsVersion||NA)}</code></div></div>
       <div class="fact"><div class="k">Key exchange</div>
-        <div class="v"><code>${kxStr}</code> ${tagFor(g.kxVuln && !g.pqcDetected)}</div></div>
-      ${cert.issuer?`<div class="fact"><div class="k">Issuer</div><div class="v"><code>${cert.issuer}</code></div></div>`:""}
+        <div class="v"><code>${esc(kxStr)}</code> ${tag(kxState)}</div></div>
+      <div class="fact"><div class="k">Certificate key</div>
+        <div class="v"><code>${esc(certStr)}</code> ${g.certVuln?tag("vuln"):""}</div></div>
+      <div class="fact"><div class="k">Signature algorithm</div>
+        <div class="v"><code>${esc(cert.sigAlg||NA)}</code> ${g.certVuln?tag("vuln"):""}</div></div>
+      ${cert.issuer?`<div class="fact"><div class="k">Issuer</div><div class="v"><code>${esc(cert.issuer)}</code></div></div>`:""}
       ${flagsHtml}
     </div>
 
     <div class="ncsc">
       <b>Where this sits against the NCSC timeline</b>
-      <p>${g.pqcDetected
-        ? "You already have post-quantum key exchange on this endpoint — ahead of the 2028 discovery milestone for this asset. The work now is proving the same across your whole estate."
-        : "This endpoint is in NCSC <b>Phase 1</b> territory: every UK organisation is expected to have a cryptographic inventory and migration plan by 2028, high-priority upgrades by 2031, and full migration by 2035."}</p>
+      <p>${ncsc}</p>
     </div>
 
-    <div class="honest">${g.pqcDetected ? "" :
-      "Worth saying plainly: almost every public endpoint is in exactly this position today. The risk isn't being unusual — it's the harvest-now-decrypt-later problem (traffic captured today, decrypted once quantum matures) combined with not yet having a plan."}</div>
+    <div class="honest">${g.pq===true ? "" :
+      "Worth saying plainly: most public endpoints are in this position today. The risk isn't being unusual. It's harvest-now-decrypt-later (traffic captured today, decrypted once quantum computers mature) combined with not yet having a plan."}</div>
 
     <div class="limits">
       <b>What this quick check can't see.</b> It reads one public endpoint. It cannot see your internal
-      systems, code, document and code signing, key management, or how long your data must stay confidential —
-      the data-lifetime and migration-friction scoring that decides what to fix first. That is what a full
-      Diarka PQC Readiness Audit adds.
+      systems, code, document and code signing, key management, or how long your data must stay confidential.
+      Those decide what to fix first, and they are what a full Diarka PQC Readiness Audit adds.
     </div>
   </div>
 
   <div class="cta">
     <h3>See your whole estate, scored and sequenced</h3>
     <p>A full Diarka PQC Readiness Audit delivers a complete cryptographic inventory, a four-axis risk
-    register, and a board-ready migration roadmap mapped to the NCSC 2028–2035 timeline.</p>
+    register, and a board-ready migration roadmap mapped to the NCSC 2028 to 2035 timeline.</p>
     <a href="mailto:${CONTACT_EMAIL}?subject=PQC%20Readiness%20Audit%20enquiry%20(${encodeURIComponent(domain)})">Book a scoping call</a>
     <a class="alt" href="https://${SITE}">${SITE}</a>
   </div>`;
   out.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
 
-/* ---- illustrative sample data (used only when no backend is wired) ---- */
+/* ---- illustrative sample data (only when opened as a file with no API_BASE) ---- */
 function sampleScan(domain){
   return {
     tlsVersion:"TLSv1.3",
-    cert:{ keyType:"RSA", keySize:2048, sigAlg:"sha256WithRSAEncryption",
-           issuer:"Sample CA (illustrative)" },
-    cipher:{ name:"TLS_AES_256_GCM_SHA384", kxFamily:"ECDHE (X25519)" },
+    cert:{ keyType:"RSA", keySize:2048, sigAlg:"RSA", issuer:"Sample CA (illustrative)" },
+    cipher:{ name:"TLS_AES_256_GCM_SHA384", kxFamily:"X25519" },
     pqcKeyExchange:false
   };
 }

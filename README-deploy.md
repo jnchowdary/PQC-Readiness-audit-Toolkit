@@ -33,10 +33,23 @@ Commit `pqc-check.html` to your GitHub Pages site. Done — the widget is live.
   free scanning proxy. Vercel has middleware / you can use a KV counter.
 
 ## What it reads (and what it doesn't)
-Reads what any browser negotiates: TLS version, the leaf certificate's
-public-key type/size, the authentication signature family, and the key-exchange
-family from the cipher.
+Two TLS handshakes run in parallel against `<domain>:443`:
 
-It does **not** confirm post-quantum (hybrid) key exchange — Node's TLS API does
-not expose the negotiated named group, so `pqcKeyExchange` is always `false`.
-That deeper detection is part of the full audit; the widget says so to the user.
+1. **Classical probe**: TLS version, the leaf certificate's public-key type and
+   size, its signature family, and the negotiated key-exchange group.
+2. **Post-quantum probe**: offers only the hybrid group `X25519MLKEM768`.
+   If the server completes the handshake, it supports post-quantum key
+   exchange (`pqcKeyExchange: true`). If it refuses, `false`.
+
+If the runtime's OpenSSL lacks ML-KEM (needs OpenSSL 3.5+; `package.json` pins
+Node 24.x), or the probe fails for a network reason, `pqcKeyExchange` is `null`
+and the page says "not confirmed" instead of claiming the site is vulnerable.
+
+Node does not report the hybrid group after a normal handshake, which is why
+the separate probe is needed.
+
+## After each deploy, check
+- `?domain=cloudflare.com` should return `pqcKeyExchange: true`.
+  If it returns `null`, the Vercel project is on an older Node; set 24.x.
+- A typical UK council or law-firm domain should return `false`.
+- A made-up domain should return a clean `error`.

@@ -1,0 +1,6 @@
+{
+  "name": "diarka-pqc-check",
+  "private": true,
+  "description": "Diarka Quantum PQC quick check: static page + serverless TLS scanner",
+  "engines": { "node": "24.x" }
+}
