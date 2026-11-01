@@ -65,13 +65,42 @@ function isPrivateAddress(ip) {
     v.startsWith("fc") || v.startsWith("fd") || v.startsWith("ff");
 }
 
-async function resolvePublic(host) {
-  const addrs = await dns.lookup(host, { all: true });
-  if (!addrs.length) { const e = new Error("Domain not found"); e.code = "ENOTFOUND"; throw e; }
-  if (addrs.some(a => isPrivateAddress(a.address))) {
-    const e = new Error("Domain resolves to a private address"); e.code = "EPRIVATE"; throw e;
+const NOT_FOUND_CODES = ["ENOTFOUND", "ENODATA", "ENONAME", "NXDOMAIN"];
+
+function friendlyError(message, code) {
+  const e = new Error(message); e.code = code; e.friendly = true; return e;
+}
+
+// Resolve via the system resolver first; if it fails transiently (e.g. EBUSY,
+// EAI_AGAIN on serverless runtimes), fall back to querying DNS directly.
+async function resolveAll(host) {
+  try {
+    return (await dns.lookup(host, { all: true })).map(a => a.address);
+  } catch (e) {
+    if (NOT_FOUND_CODES.includes(e.code)) throw e;
+    const results = await Promise.allSettled([dns.resolve4(host), dns.resolve6(host)]);
+    const addrs = results.filter(r => r.status === "fulfilled").flatMap(r => r.value);
+    if (addrs.length) return addrs;
+    const codes = results.map(r => r.reason && r.reason.code);
+    const err = new Error("DNS lookup failed");
+    err.code = codes.every(c => NOT_FOUND_CODES.includes(c)) ? "ENOTFOUND" : "EDNS";
+    throw err;
   }
-  return addrs[0].address;
+}
+
+async function resolvePublic(host) {
+  let addrs;
+  try { addrs = await resolveAll(host); }
+  catch (e) {
+    if (NOT_FOUND_CODES.includes(e.code)) throw friendlyError("Domain not found", "ENOTFOUND");
+    throw friendlyError("Couldn't look up this domain right now", "EDNS");
+  }
+  if (!addrs.length) throw friendlyError("Domain not found", "ENOTFOUND");
+  if (addrs.some(isPrivateAddress)) {
+    throw friendlyError("That domain points to a private address, so it can't be checked", "EPRIVATE");
+  }
+  // Prefer IPv4: serverless runtimes often lack IPv6 egress.
+  return addrs.find(a => net.isIPv4(a)) || addrs[0];
 }
 
 // One TLS handshake. Resolves {ok:true, socketInfo} or {ok:false, code}.
@@ -165,8 +194,7 @@ async function inspectHost(host) {
   ]);
 
   if (!classical.ok) {
-    const e = new Error(FRIENDLY[classical.code] || ("TLS handshake failed (" + classical.code + ")"));
-    e.code = classical.code; throw e;
+    throw friendlyError(FRIENDLY[classical.code] || "This domain didn't complete a secure connection on port 443", classical.code);
   }
 
   // true = server accepted ML-KEM hybrid; false = server refused it;
@@ -188,10 +216,11 @@ async function inspect(domain) {
     return await inspectHost(domain);
   } catch (e) {
     // Some organisations only serve TLS on www. Try it once before giving up.
-    if (!domain.startsWith("www.") && ["ENOTFOUND", "ECONNREFUSED", "ETIMEDOUT"].includes(e.code)) {
+    if (!domain.startsWith("www.") && ["ENOTFOUND", "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "EDNS"].includes(e.code)) {
       try { return await inspectHost("www." + domain); } catch {}
     }
-    return { error: e.message || "Connection failed" };
+    // Never show raw Node error text to visitors.
+    return { error: e.friendly ? e.message : "Couldn't connect to this domain" };
   }
 }
 
@@ -210,4 +239,4 @@ module.exports = async (req, res) => {
 };
 
 // Exposed for local testing only.
-module.exports._internal = { handshake, read, cleanDomain, validHost, isPrivateAddress };
+module.exports._internal = { handshake, read, cleanDomain, validHost, isPrivateAddress, resolvePublic, inspect };
