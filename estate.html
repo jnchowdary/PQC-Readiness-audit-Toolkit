@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="https://diarkaquantum.co.uk/diarka-logo-header-180w.png">
+<title>PQC estate scan · Diarka Quantum</title>
+<style>
+  :root{
+    --navy:#0B1230; --card:#141d47; --card2:#0f1738;
+    --cyan:#1FB6C9; --blue:#3D6FF5; --white:#EAF0FF; --mute:#9FB0DA; --dim:#6B79A6;
+    --line:#23306A; --p1:#E5484D; --p2:#F5A623; --ok:#1FA971;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--navy);color:var(--white);
+       padding:30px 18px 60px;line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:26px}
+  .top img{height:38px;display:block}
+  .btn{background:var(--cyan);color:var(--navy);font-weight:700;font-size:14px;border:none;
+       border-radius:9px;padding:11px 18px;cursor:pointer;text-decoration:none;display:inline-block}
+  .eyebrow{color:var(--cyan);letter-spacing:3px;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.3px;line-height:1.15;margin-bottom:6px;word-break:break-word}
+  .meta{color:var(--mute);font-size:13px;margin-bottom:22px}
+  .meta span{white-space:nowrap}
+  h2{font-size:17px;margin:30px 0 12px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .grade{display:flex;gap:16px;align-items:center}
+  .ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:18px;flex:0 0 auto}
+  .grade h3{font-size:18px;margin-bottom:4px}
+  .grade p{color:var(--mute);font-size:14px}
+  .finding{border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px;background:var(--card2);
+           break-inside:avoid}
+  .finding .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+  .finding .k{font-weight:700;font-size:14px}
+  .finding code{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12.5px;background:#ffffff10;padding:2px 7px;border-radius:5px}
+  .finding p{color:var(--mute);font-size:13.5px}
+  .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .t-vuln{background:#E5484D1A;color:#ff8b8e}
+  .t-warn{background:#F5A6231A;color:#ffc777}
+  .t-ok{background:#1FA9711A;color:#5fd6a6}
+  .t-info{background:#3D6FF51A;color:#9bb5ff}
+  ol.actions{padding-left:0;list-style:none;counter-reset:a}
+  ol.actions li{counter-increment:a;position:relative;padding:14px 16px 14px 54px;border:1px solid var(--line);
+        border-radius:12px;margin-bottom:10px;background:var(--card2);break-inside:avoid}
+  ol.actions li:before{content:counter(a);position:absolute;left:16px;top:13px;width:26px;height:26px;border-radius:50%;
+        background:var(--cyan);color:var(--navy);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  ol.actions b{display:block;margin-bottom:3px;font-size:14.5px}
+  ol.actions span{color:var(--mute);font-size:13.5px}
+  .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ms{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2);break-inside:avoid}
+  .ms .yr{color:var(--cyan);font-weight:800;font-size:20px}
+  .ms .what{font-weight:700;font-size:13.5px;margin:2px 0 6px}
+  .ms p{color:var(--mute);font-size:12.5px}
+  .note{color:var(--dim);font-size:12.5px;margin-top:12px}
+  .limits{color:var(--mute);font-size:13px}
+  .cta{margin-top:30px;border:1px solid var(--line);border-radius:14px;padding:20px;background:linear-gradient(180deg,#141d47,#0f1738)}
+  .cta h3{font-size:16px;margin-bottom:6px}
+  .cta p{color:var(--mute);font-size:13.5px;margin-bottom:14px}
+  footer{color:var(--dim);font-size:11.5px;margin-top:28px;text-align:center}
+  #state{color:var(--mute);padding:40px 0;text-align:center}
+  @media (max-width:600px){ .timeline{grid-template-columns:1fr} h1{font-size:23px} }
+
+  /* ---------- Print / Save as PDF: light theme, A4 ---------- */
+  /* margin:0 stops Chrome/Edge printing the page URL (which contains the private
+     report link) and a timestamp in the header and footer; the body padding
+     restores the white margin instead. */
+  @page{size:A4;margin:0}
+  @media print{
+    :root{--white:#0B1230;--mute:#3a4566;--dim:#6a7593;--line:#d5dbec;--card:#ffffff;--card2:#f6f8fd}
+    body{background:#fff;padding:14mm 14mm 16mm;font-size:12px}
+    .timeline,.cta{break-inside:avoid}
+    .timeline-wrap{break-inside:avoid}
+    .wrap{max-width:none}
+    .no-print{display:none!important}
+    .top{background:#0B1230;border-radius:10px;padding:12px 16px;margin-bottom:18px;
+         -webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .tag,.ring,ol.actions li:before,.ms .yr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .finding code{background:#eef1f8}
+    .t-vuln{color:#b3261e;background:#fde8e7}
+    .t-warn{color:#8a5a00;background:#fff1d6}
+    .t-ok{color:#0f6e48;background:#e1f5ec}
+    .t-info{color:#2747a8;background:#e6ecfd}
+    .cta{background:#f6f8fd}
+    h2{break-after:avoid}
+    a{color:#0B1230}
+  }
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .tile{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2);break-inside:avoid}
+  .tile .n{font-size:28px;font-weight:800;line-height:1.1}
+  .tile .l{color:var(--mute);font-size:12.5px;margin-top:4px}
+  .n.ok{color:#5fd6a6} .n.bad{color:#ff8b8e} .n.warn{color:#ffc777}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--mute);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card2)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:nth-child(2),td:nth-child(5){white-space:nowrap}
+  td.h{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12px;word-break:break-all;min-width:170px}
+  td .tag{display:inline-block;margin:0 4px 4px 0}
+  tr{break-inside:avoid}
+  thead{display:table-header-group}
+  ul.plain{list-style:none;padding:0}
+  ul.plain li{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12px;padding:3px 0;color:var(--white)}
+  .sub{color:var(--mute);font-size:13px;margin:-4px 0 10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:700px){ .tiles{grid-template-columns:repeat(2,1fr)} .cols{grid-template-columns:1fr} }
+  @media print{ .tiles{grid-template-columns:repeat(4,1fr)} th{background:#eef1f8} .n.ok,.n.bad,.n.warn{-webkit-print-color-adjust:exact;print-color-adjust:exact} .n.ok{color:#0f6e48} .n.bad{color:#b3261e} .n.warn{color:#8a5a00} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="https://diarkaquantum.co.uk"><img src="https://diarkaquantum.co.uk/diarka-logo-header-180w.png" alt="Diarka Quantum"></a>
+    <button class="btn no-print" id="pdf" style="display:none">Save as PDF</button>
+  </div>
+  <div id="state">Loading your estate report…</div>
+  <div id="report"></div>
+  <footer>
+    Diarka Quantum Ltd · United Kingdom · An external scan is not a full assessment.<br>
+    Algorithm-standardisation status accurate as of late 2026 (NIST and NCSC guidance continues to evolve).
+  </footer>
+</div>
+
+<script>
+/* API_BASE: "" when this page is served by the same Vercel project as the API. */
+const API_BASE = "";
+const CONTACT_EMAIL = "nageshj@diarkaquantum.co.uk";
+
+const $ = s => document.querySelector(s);
+function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
+
+const ISSUE = {
+  PQ_NO:        ["t-vuln", "Classical key exchange"],
+  PQ_UNKNOWN:   ["t-warn", "PQ not confirmed"],
+  TLS_OLD:      ["t-vuln", "Deprecated TLS"],
+  TLS_12:       ["t-warn", "TLS 1.2"],
+  RSA_WEAK:     ["t-vuln", "RSA under 2048"],
+  CERT_EXPIRED: ["t-vuln", "Certificate expired"],
+  CERT_SOON:    ["t-warn", "Expires in 30 days"],
+};
+const WEIGHT = { CERT_EXPIRED: 50, TLS_OLD: 40, RSA_WEAK: 40, CERT_SOON: 20, PQ_NO: 10, TLS_12: 5, PQ_UNKNOWN: 3 };
+
+$("#pdf").addEventListener("click", () => window.print());
+load();
+
+async function load(){
+  const t = new URLSearchParams(location.search).get("t") || "";
+  if(!t) return showState("This page needs the link from your report email.");
+  let r, data;
+  try{ r = await fetch(API_BASE.replace(/\/$/,"") + "/api/estate?t=" + encodeURIComponent(t)); data = await r.json(); }
+  catch(e){ return showState("We couldn't load your report just now. Please refresh in a moment."); }
+  if(!r.ok) return showState(esc(data && data.error || "We couldn't find this report.") +
+    `<br><br>Contact <a style="color:var(--cyan)" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> and we'll send it again.`);
+  render(data);
+}
+function showState(html){ $("#state").innerHTML = html; }
+
+function actionsFor(s, hosts){
+  const a = [];
+  const attention = hosts.filter(h => h.status === "ok");
+  if(s.certExpired) a.push([`Renew ${plural(s.certExpired, "expired certificate")}`, "Visitors to these endpoints already see security warnings. This is today's problem, before any quantum question."]);
+  if(s.tlsOld) a.push([`Switch off TLS 1.0 and 1.1 on ${plural(s.tlsOld, "endpoint")}`, "Deprecated versions fail today's security baseline. Usually a single configuration change on the server, load balancer or CDN."]);
+  if(s.rsaWeak) a.push([`Replace ${plural(s.rsaWeak, "certificate")} whose RSA key is under 2048 bits`, "Below today's minimum, regardless of quantum risk."]);
+  if(s.pqNo){
+    const pct = s.https ? Math.round(100 * s.pqNo / s.https) : 0;
+    a.push([`Enable hybrid post-quantum key exchange on ${plural(s.pqNo, "endpoint")} (${pct}% of your estate)`,
+      "Start with endpoints that carry logins, personal data or long-lived records: they are the harvest-now-decrypt-later targets. " +
+      (s.tls12 ? `${plural(s.tls12, "endpoint")} still ${s.tls12 === 1 ? "runs" : "run"} TLS 1.2 and must move to TLS 1.3 first. ` : "") +
+      "On current platforms this is often an upgrade or configuration change, not a project. Where several endpoints share a CDN or load balancer, one change covers them all."]);
+  }
+  if(s.certSoon) a.push([`Automate renewal for ${plural(s.certSoon, "certificate")} expiring within 30 days`, "Manual renewals are how certificates lapse."]);
+  if(s.pqUnknown) a.push([`Ask your hosting providers about ${plural(s.pqUnknown, "endpoint")} we couldn't confirm`, "We couldn't confirm post-quantum support from outside. A quick yes or no from the provider settles it."]);
+  if(s.privateAddr) a.push([`Review ${plural(s.privateAddr, "public DNS name")} pointing to internal addresses`, "They reveal internal structure to anyone who looks, and the systems behind them can't be checked from outside."]);
+  a.push(["Extend this into a full cryptographic inventory", "The NCSC expects a complete inventory and migration plan by 2028. This scan covers your public web estate; internal systems, code, signing and suppliers are the larger part."]);
+  a.push(["Identify data that must stay confidential beyond the 2030s", "Records with a long confidentiality life (legal, health, financial, personal) decide what to migrate first."]);
+  // Always keep the post-quantum action in the top three when it applies.
+  const pqi = a.findIndex(x => x[0].startsWith("Enable hybrid"));
+  if(pqi > 2) a.splice(2, 0, a.splice(pqi, 1)[0]);
+  return a.slice(0, 3);
+}
+
+function render(data){
+  const R = data.result || {}, s = R.summary || {}, hosts = R.hosts || [];
+  const ok = hosts.filter(h => h.status === "ok")
+    .sort((a, b) => (b.issues || []).reduce((t, i) => t + (WEIGHT[i] || 0), 0) - (a.issues || []).reduce((t, i) => t + (WEIGHT[i] || 0), 0) || a.host.localeCompare(b.host));
+  const noHttps = hosts.filter(h => h.status === "no_https");
+  const priv = hosts.filter(h => h.status === "private");
+  const today = ok.filter(h => (h.issues || []).some(i => ["CERT_EXPIRED","TLS_OLD","RSA_WEAK","CERT_SOON"].includes(i))).length;
+  const pct = s.https ? Math.round(100 * s.pqYes / s.https) : 0;
+  const scanned = data.createdAt ? new Date(data.createdAt).toLocaleString("en-GB",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+  document.title = `PQC estate scan: ${data.domain} · Diarka Quantum`;
+
+  let colour, headline, blurb;
+  if(!s.https){ colour="var(--p2)"; headline="No public HTTPS endpoints found"; blurb="We couldn't find any web endpoints answering securely on port 443 for this domain."; }
+  else if(pct === 100){ colour="var(--ok)"; headline=`All ${s.https} public endpoints use post-quantum key exchange`; blurb="Your public web estate is protected against harvest-now-decrypt-later. Certificates are still classical, which is normal today."; }
+  else if(pct >= 50){ colour="var(--p2)"; headline=`${s.pqYes} of ${s.https} public endpoints use post-quantum key exchange`; blurb="Part of your public estate is protected. The rest still uses classical key exchange only, which a sufficiently capable quantum computer is expected to break."; }
+  else { colour="var(--p1)"; headline=`${s.pqYes} of ${s.https} public endpoints use post-quantum key exchange`; blurb="Most of your public estate uses classical key exchange only, which a sufficiently capable quantum computer is expected to break. Most organisations are in this position today."; }
+
+  const tags = (h) => (h.issues && h.issues.length ? h.issues : []).map(i => `<span class="tag ${ISSUE[i][0]}">${ISSUE[i][1]}</span>`).join("") ||
+                      '<span class="tag t-ok">No issues</span>';
+  const date = (iso) => iso ? new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "n/a";
+  const rows = ok.map(h => `<tr>
+      <td class="h">${esc(h.host)}</td>
+      <td>${esc((h.tlsVersion||"n/a").replace("TLSv","TLS "))}</td>
+      <td>${h.pq === true ? '<span class="tag t-ok">Post-quantum</span>' : esc(h.kx || "n/a")}</td>
+      <td>${esc(h.certKey || "n/a")}</td>
+      <td>${esc(date(h.certExpiry))}</td>
+      <td>${tags(h)}</td></tr>`).join("");
+
+  const list = (arr, f) => `<ul class="plain">${arr.map(x => `<li>${f(x)}</li>`).join("")}</ul>`;
+  const notChecked = [];
+  if(noHttps.length) notChecked.push(`<div class="finding"><div class="head"><span class="k">No secure web service (${noHttps.length})</span></div>
+     <p class="sub">These names exist in DNS but didn't complete a TLS connection on port 443. Often retired services, mail-only hosts or firewalled systems. Worth confirming each is meant to exist.</p>
+     ${list(noHttps, h => esc(h.host))}</div>`);
+  if(priv.length) notChecked.push(`<div class="finding"><div class="head"><span class="k">Internal addresses in public DNS (${priv.length})</span><span class="tag t-warn">Review</span></div>
+     <p class="sub">These public names point to private network addresses, so they can't be checked from outside, and they reveal internal structure to anyone who looks.</p>
+     ${list(priv, h => esc(h.host))}</div>`);
+  if((R.mx||[]).length) notChecked.push(`<div class="finding"><div class="head"><span class="k">Mail servers (${R.mx.length})</span><span class="tag t-info">Not checked</span></div>
+     <p class="sub">Email is a prime harvest-now-decrypt-later target. Mail servers negotiate encryption over STARTTLS on port 25, which this online scanner can't test. A full audit covers them.</p>
+     ${list(R.mx, m => esc(m))}</div>`);
+  if(s.overCap) notChecked.push(`<div class="finding"><div class="head"><span class="k">Not scanned: over the ${R.limits ? R.limits.maxHosts : 40}-endpoint limit (${s.overCap})</span></div>
+     <p class="sub">Your estate is larger than this free scan covers. ${s.overCap > (R.overCapSample||[]).length ? "First " + (R.overCapSample||[]).length + " shown." : ""}</p>
+     ${list(R.overCapSample || [], h => esc(h))}</div>`);
+
+  const actions = actionsFor(s, hosts);
+  const m2031 = pct === 100
+    ? "Key exchange across your public web estate is done. Internal systems and mail decide whether you meet this milestone."
+    : "Internet-facing services carrying sensitive data are likely to fall in the priority group. The classical-only endpoints above are early candidates.";
+
+  $("#state").style.display = "none";
+  $("#pdf").style.display = "inline-block";
+  $("#report").innerHTML = `
+    <div class="eyebrow">PQC estate scan</div>
+    <h1>${esc(data.domain)}</h1>
+    <div class="meta"><span>Scanned ${esc(scanned)}</span> &nbsp;·&nbsp; <span>Reference ${esc(data.reference||"")}</span></div>
+
+    <div class="panel"><div class="grade">
+      <div class="ring" style="background:color-mix(in srgb, ${colour} 12%, transparent);color:${colour};border:2px solid ${colour}">${s.https ? pct + "%" : "?"}</div>
+      <div><h3>${esc(headline)}</h3><p>${blurb}</p></div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="n">${s.https||0}</div><div class="l">public HTTPS endpoints checked</div></div>
+      <div class="tile"><div class="n ok">${s.pqYes||0}</div><div class="l">with post-quantum key exchange</div></div>
+      <div class="tile"><div class="n bad">${s.pqNo||0}</div><div class="l">classical key exchange only</div></div>
+      <div class="tile"><div class="n warn">${today}</div><div class="l">need attention today (expired, expiring, deprecated or weak)</div></div>
+    </div></div>
+
+    <h2>First three actions</h2>
+    <ol class="actions">${actions.map(x => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol>
+
+    <h2>Every endpoint we checked</h2>
+    <p class="sub">Most urgent first. "Post-quantum" means the endpoint accepted hybrid ML-KEM key exchange (X25519MLKEM768). Certificates are classical across the public web today; that is expected.</p>
+    ${ok.length ? `<div class="tablewrap"><table>
+      <thead><tr><th>Endpoint</th><th>TLS</th><th>Key exchange</th><th>Certificate</th><th>Expires</th><th>Findings</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>` : '<p class="limits">No endpoints completed a secure connection.</p>'}
+
+    ${notChecked.length ? `<h2>Found but not checked</h2>${notChecked.join("")}` : ""}
+
+    <div class="timeline-wrap"><h2>Where your public estate sits against the NCSC timeline</h2>
+    <div class="timeline">
+      <div class="ms"><div class="yr">2028</div><div class="what">Discovery and plan</div>
+        <p>A full cryptographic inventory and migration plan. This scan is the public-facing slice of that inventory.</p></div>
+      <div class="ms"><div class="yr">2031</div><div class="what">Priority migrations done</div><p>${m2031}</p></div>
+      <div class="ms"><div class="yr">2035</div><div class="what">Full migration</div>
+        <p>Everything migrated, including certificates and signatures, which are still classical on almost every public site today.</p></div>
+    </div></div>
+
+    <h2>How this scan works, and what it can't see</h2>
+    <p class="limits">${R.source === "ct"
+      ? "We found your public hostnames in Certificate Transparency logs, the public record of every TLS certificate issued for your domain, then checked each one that still exists in DNS."
+      : "The Certificate Transparency service was unavailable when this scan ran, so we checked a list of common hostnames (www, mail, vpn, portal and others) instead. A repeat scan may find more."}
+      Each endpoint was checked from outside, exactly as any visitor's browser would connect. The scan can't see internal systems, code,
+      document and code signing, key management, suppliers, or how long your data must stay confidential. Those decide what to fix first,
+      and they are what a full Diarka PQC Readiness Audit covers.</p>
+
+    <div class="cta">
+      <h3>Turn this into a migration plan</h3>
+      <p>A Diarka PQC Readiness Audit extends this public scan inside your organisation and delivers a complete cryptographic inventory,
+        a four-axis risk register and a board-ready migration roadmap mapped to the NCSC 2028 to 2035 timeline.</p>
+      <a class="btn" href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("PQC estate report " + (data.reference||"") + " (" + data.domain + ")")}">Talk to Diarka Quantum</a>
+      <span style="color:var(--mute);font-size:13px;margin-left:12px">${CONTACT_EMAIL}</span>
+    </div>`;
+}
+</script>
+</body>
+</html>

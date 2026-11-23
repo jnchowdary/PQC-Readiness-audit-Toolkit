@@ -2,6 +2,9 @@
   "rewrites": [
     { "source": "/", "destination": "/pqc-check.html" }
   ],
+  "functions": {
+    "api/estate.js": { "maxDuration": 60 }
+  },
   "crons": [
     { "path": "/api/keepalive", "schedule": "17 6 * * *" }
   ]

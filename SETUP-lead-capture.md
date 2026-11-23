@@ -117,3 +117,16 @@ If the database is ever unreachable, checks are allowed rather than blocked.
 
 The table `scan_events` also shows which domains people check, even without
 requesting a report. Rows older than 30 days are deleted by the daily keep-alive.
+
+## Estate scan (whole organisation)
+
+`/api/estate` scans every public hostname of the organisation behind a work
+email (domain taken from the email, never typed in; report goes only to that
+inbox). Hostnames come from Certificate Transparency logs (crt.sh), with a list
+of common names as fallback. Up to 40 hosts per scan, 12 at a time. Mail
+servers are listed but not checked (Vercel blocks outbound port 25).
+
+Setup: run `supabase/estate.sql` once in Supabase. Leads land in the
+`estate_scans` table (same pipeline columns as `leads`). Limits: one scan per
+email (two resends), 2 new scans per IP per day, 20 per hour overall.
+`vercel.json` gives the function 60 seconds.

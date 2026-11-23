@@ -99,6 +99,13 @@
   .leadmsg.ok{display:block;color:#5fd6a6}
   .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
   @media (max-width:520px){ .lead .field{flex-direction:column} .lead .field button{padding:13px 18px} }
+  .estate{margin-top:22px;border-color:#1FB6C955}
+  .estate h3{font-size:17px;margin-bottom:6px}
+  .estate p{color:var(--mute);font-size:13.5px;margin-bottom:14px;line-height:1.5}
+  .estate .fine{font-size:11.5px;color:var(--dim);margin:12px 0 0}
+  .estate .fine a{color:var(--cyan)}
+  .estate .field button{padding:0 18px}
+  @media (max-width:520px){ .estate .field{flex-direction:column} .estate .field button{padding:13px 18px} }
   footer{color:var(--dim);font-size:11.5px;margin-top:26px;text-align:center;line-height:1.6}
   footer a{color:var(--mute)}
 </style>
@@ -127,6 +134,22 @@
 
   <div id="out"></div>
 
+  <div class="estate panel" id="estate">
+    <div class="eyebrow" style="margin-bottom:6px">New · Whole-estate scan</div>
+    <h3>Check every public endpoint your organisation runs</h3>
+    <p>Enter your work email. We find every public hostname under your organisation's domain in Certificate Transparency logs,
+      check each one (up to 40), and email you a report showing which are quantum-safe, which aren't, and what to fix first.</p>
+    <form class="field" id="estateForm" novalidate>
+      <input type="email" id="estateEmail" placeholder="you@yourcompany.co.uk" autocomplete="email" spellcheck="false" required>
+      <input type="text" id="estateHp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button type="submit" id="estateBtn">Scan my estate</button>
+    </form>
+    <div class="leadmsg" id="estateMsg" role="status"></div>
+    <p class="fine">We only scan the domain of the email you enter, and the report goes only to that inbox. Work email only, one estate scan
+      per address. We keep your email and the results to send the report and follow up about it; you can opt out at any time.
+      <a href="#" target="_blank" rel="noopener" id="estatePrivacy">Privacy notice</a></p>
+  </div>
+
   <footer>
     Diarka Quantum Ltd · United Kingdom &nbsp;·&nbsp; A quick check is not a full assessment.
     <br>Algorithm-standardisation status accurate as of mid-2026 (NIST &amp; NCSC guidance continues to evolve).
@@ -146,6 +169,7 @@ const CONTACT_EMAIL = "nageshj@diarkaquantum.co.uk";
 const SITE = "diarkaquantum.co.uk";
 const PRIVACY_URL = "https://diarkaquantum.co.uk/privacy"; // must exist before launch
 const REPORT_URL = API_BASE.replace(/\/$/, "") + "/api/report";
+const ESTATE_URL = API_BASE.replace(/\/$/, "") + "/api/estate";
 
 const FUNCTION_URL = API_BASE.replace(/\/$/, "") + "/api/pqc-check";
 const NO_BACKEND = !API_BASE && location.protocol === "file:";
@@ -398,6 +422,49 @@ function sampleScan(domain){
     pqcKeyExchange:false
   };
 }
+/* ---- whole-estate scan ---- */
+const ESTATE_MESSAGES = {
+  RECENTLY_SENT: "We sent your estate report a few minutes ago. Check your inbox and spam folder.",
+  RESEND_LIMIT: "We've already sent this report several times. Contact us and we'll send it directly.",
+  RATE_LIMIT: "Too many estate scans from your network today. Contact us instead.",
+  BUSY: "The estate scanner is busy right now. Please try again in an hour, or contact us.",
+};
+(function wireEstate(){
+  const form = $("#estateForm"); if(!form) return;
+  const email = $("#estateEmail"), b = $("#estateBtn"), msg = $("#estateMsg");
+  $("#estatePrivacy").href = PRIVACY_URL;
+  const say = (cls, html) => { msg.className = "leadmsg " + cls; msg.innerHTML = html; };
+  const contactLink = `<a href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("PQC estate scan")}">${CONTACT_EMAIL}</a>`;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if(NO_BACKEND){ say("err", "The estate scan needs the live scanner. Open this page from its web address."); return; }
+    const value = email.value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(value)){ email.style.borderColor = "#E5484D"; say("err", "Enter a valid work email address."); return; }
+    email.style.borderColor = "";
+    b.disabled = true; b.textContent = "Scanning…";
+    say("ok", `<span class="spin" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>Finding and checking every public endpoint for <b>${esc(value.split("@")[1])}</b>. This takes up to a minute; keep this page open.`);
+    let r, data = {};
+    try{
+      r = await fetch(ESTATE_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value, website: $("#estateHp").value }) });
+      data = await r.json().catch(() => ({}));
+    }catch(err){
+      b.disabled = false; b.textContent = "Scan my estate";
+      say("err", "The scanner didn't respond. Please try again in a moment."); return;
+    }
+    b.disabled = false; b.textContent = "Scan my estate";
+    if(r.ok){
+      form.style.display = "none";
+      say("ok", data.status === "resent"
+        ? `We've sent your estate report for <b>${esc(data.domain)}</b> again to <b>${esc(value)}</b>. Check your spam folder if it isn't in your inbox.`
+        : `Done. Your estate report for <b>${esc(data.domain)}</b> is on its way to <b>${esc(value)}</b>. If it isn't there in a few minutes, check your spam folder.`);
+      return;
+    }
+    const text = esc(ESTATE_MESSAGES[data.code] || data.error || "Something went wrong. Please try again.");
+    if(["RECENTLY_SENT","RESEND_LIMIT","RATE_LIMIT","BUSY"].includes(data.code)){ form.style.display = "none"; say("err", text + " " + contactLink); }
+    else say("err", text);
+  });
+})();
 </script>
 </body>
 </html>
