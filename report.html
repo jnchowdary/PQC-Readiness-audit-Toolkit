@@ -64,10 +64,15 @@
   @media (max-width:600px){ .timeline{grid-template-columns:1fr} h1{font-size:23px} }
 
   /* ---------- Print / Save as PDF: light theme, A4 ---------- */
-  @page{size:A4;margin:14mm 14mm 16mm}
+  /* margin:0 stops Chrome/Edge printing the page URL (which contains the private
+     report link) and a timestamp in the header and footer; the body padding
+     restores the white margin instead. */
+  @page{size:A4;margin:0}
   @media print{
     :root{--white:#0B1230;--mute:#3a4566;--dim:#6a7593;--line:#d5dbec;--card:#ffffff;--card2:#f6f8fd}
-    body{background:#fff;padding:0;font-size:12px}
+    body{background:#fff;padding:14mm 14mm 16mm;font-size:12px}
+    .timeline,.cta{break-inside:avoid}
+    .timeline-wrap{break-inside:avoid}
     .wrap{max-width:none}
     .no-print{display:none!important}
     .top{background:#0B1230;border-radius:10px;padding:12px 16px;margin-bottom:18px;
@@ -240,7 +245,7 @@ function render(data){
     <h2>First three actions</h2>
     <ol class="actions">${a.actions.map(x => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol>
 
-    <h2>Where this sits against the NCSC timeline</h2>
+    <div class="timeline-wrap"><h2>Where this sits against the NCSC timeline</h2>
     <div class="timeline">
       <div class="ms"><div class="yr">2028</div><div class="what">Discovery and plan</div>
         <p>A full cryptographic inventory and a migration plan. This endpoint is one line of that inventory; the rest of your estate is the larger part.</p></div>
@@ -248,7 +253,7 @@ function render(data){
         <p>${m2031}</p></div>
       <div class="ms"><div class="yr">2035</div><div class="what">Full migration</div>
         <p>Everything migrated, including certificates and signatures, which are still classical on almost every public site today.</p></div>
-    </div>
+    </div></div>
 
     <h2>What this check can't see</h2>
     <p class="limits">This report covers one public endpoint. It can't see your internal systems, other domains and subdomains,
