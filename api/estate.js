@@ -12,7 +12,7 @@
 //   - One estate scan per email. Asking again resends the same report link
 //     (max 2 resends, 10 minutes apart), without rescanning.
 //   - Max 2 new estate scans per IP per day, and 20 per hour overall: each
-//     scan probes up to 40 hosts, so this is the expensive endpoint.
+//     scan probes up to 24 hosts, so this is the expensive endpoint.
 //   - The scan runs inside this request (up to about a minute; maxDuration is
 //     set in vercel.json). A failed scan or email saves nothing.
 //

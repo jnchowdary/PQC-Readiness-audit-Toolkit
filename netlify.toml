@@ -1,0 +1,26 @@
+# Netlify configuration for the Diarka PQC Quick Check.
+# The same repo still deploys on Vercel (vercel.json) until the switch-over.
+
+[build]
+  # Publish only the three pages. lib/, api/, supabase/ and the docs are
+  # never served as files.
+  command = "mkdir -p dist && cp pqc-check.html report.html estate.html dist/"
+  publish = "dist"
+
+[functions]
+  node_bundler = "esbuild"
+
+[functions."keepalive"]
+  schedule = "17 6 * * *"
+
+# API paths stay exactly as they were on Vercel, so the pages need no changes.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/"
+  to = "/pqc-check.html"
+  status = 200

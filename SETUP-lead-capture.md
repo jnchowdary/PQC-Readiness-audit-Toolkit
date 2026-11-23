@@ -123,10 +123,10 @@ requesting a report. Rows older than 30 days are deleted by the daily keep-alive
 `/api/estate` scans every public hostname of the organisation behind a work
 email (domain taken from the email, never typed in; report goes only to that
 inbox). Hostnames come from Certificate Transparency logs (crt.sh), with a list
-of common names as fallback. Up to 40 hosts per scan, 12 at a time. Mail
+of common names as fallback. Up to 24 hosts per scan, checked in one parallel round. Mail
 servers are listed but not checked (Vercel blocks outbound port 25).
 
 Setup: run `supabase/estate.sql` once in Supabase. Leads land in the
 `estate_scans` table (same pipeline columns as `leads`). Limits: one scan per
 email (two resends), 2 new scans per IP per day, 20 per hour overall.
-`vercel.json` gives the function 60 seconds.
+`vercel.json` gives the function 60 seconds on Vercel; on Netlify the limit is 30 seconds, which the scan is sized to fit.
