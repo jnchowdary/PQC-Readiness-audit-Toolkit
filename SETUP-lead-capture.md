@@ -104,3 +104,16 @@ Use Supabase's **Table Editor > leads**, sorted by `created_at`. The most useful
 - `report_views` and `first_viewed_at`: whether they actually read the report
 - `status` and `notes`: yours to fill in by hand (new, contacted, call booked, proposal, won, lost, not a fit)
 - `opted_out`: tick it when someone replies "unsubscribe"
+
+## Rate limit on the instant check
+
+`/api/pqc-check` is limited per visitor IP (stored only as a salted hash):
+10 checks per 10 minutes, 30 per day, and 300 per hour across everyone.
+Change these in `LIMITS` at the top of `api/pqc-check.js`.
+
+Setup: run `supabase/rate-limit.sql` once in Supabase (SQL Editor > New query > Run).
+Until it is run, checks are still allowed and Vercel logs "rate limit check failed".
+If the database is ever unreachable, checks are allowed rather than blocked.
+
+The table `scan_events` also shows which domains people check, even without
+requesting a report. Rows older than 30 days are deleted by the daily keep-alive.

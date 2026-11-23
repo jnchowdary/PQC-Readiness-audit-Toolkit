@@ -205,6 +205,13 @@ async function run(){
     showError("Scanner unavailable", "The checking service returned an unexpected response. Please try again in a moment.");
     return;
   }
+  if(r.status === 429){
+    // Rate limited: not the domain's fault, so don't tell them to check it.
+    showError("Check limit reached",
+      `${esc(data.error || "Too many checks. Please try again later.")}
+       <br><a style="color:var(--cyan)" href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("PQC Quick Check (" + domain + ")")}">${CONTACT_EMAIL}</a>`);
+    return;
+  }
   if(!r.ok || data.error){
     showError("Couldn't complete the check",
       `${esc(data.error || "Scan failed")} for <span class="dom">${esc(domain)}</span>.
@@ -283,7 +290,7 @@ function render(domain, d, sample){
         <div class="v"><code>${esc(kxStr)}</code> ${tag(kxState)}</div></div>
       <div class="fact"><div class="k">Certificate key</div>
         <div class="v"><code>${esc(certStr)}</code> ${g.certVuln?tag("vuln"):""}</div></div>
-      <div class="fact"><div class="k">Signature algorithm</div>
+      <div class="fact"><div class="k">Handshake signature</div>
         <div class="v"><code>${esc(cert.sigAlg||NA)}</code> ${g.certVuln?tag("vuln"):""}</div></div>
       ${cert.issuer?`<div class="fact"><div class="k">Issuer</div><div class="v"><code>${esc(cert.issuer)}</code></div></div>`:""}
       ${flagsHtml}
