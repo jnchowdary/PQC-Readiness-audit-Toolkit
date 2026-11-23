@@ -88,6 +88,17 @@
     .tag{margin-left:0}
     .cta .alt{display:block;margin:12px 0 0}
   }
+  .lead{margin-top:18px;background:var(--card);border:1px solid var(--cyan);border-radius:14px;padding:20px}
+  .lead h3{font-size:16px;margin-bottom:6px}
+  .lead p{color:var(--mute);font-size:13.5px;margin-bottom:14px}
+  .lead .field button{padding:0 18px}
+  .lead .fine{font-size:11.5px;color:var(--dim);margin:12px 0 0;line-height:1.5}
+  .lead .fine a,.leadmsg a{color:var(--cyan)}
+  .leadmsg{font-size:13.5px;margin-top:10px;display:none;line-height:1.5}
+  .leadmsg.err{display:block;color:#ffc777}
+  .leadmsg.ok{display:block;color:#5fd6a6}
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+  @media (max-width:520px){ .lead .field{flex-direction:column} .lead .field button{padding:13px 18px} }
   footer{color:var(--dim);font-size:11.5px;margin-top:26px;text-align:center;line-height:1.6}
   footer a{color:var(--mute)}
 </style>
@@ -107,7 +118,7 @@
              spellcheck="false">
       <button id="go">Check</button>
     </div>
-    <div class="hint">We read only what any browser already negotiates with the site. No login, nothing stored.</div>
+    <div class="hint">We read only what any browser already negotiates with the site. The instant check needs no login and stores nothing.</div>
     <div class="samplebanner" id="sampleBanner" style="display:none">
       <b>SAMPLE MODE.</b> No live scanner is connected, so results below are an illustrative example,
       not a real scan of the domain entered. Set API_BASE in the page, or open it from its Vercel URL, to make this live.
@@ -133,6 +144,8 @@
 const API_BASE = "";
 const CONTACT_EMAIL = "nageshj@diarkaquantum.co.uk";
 const SITE = "diarkaquantum.co.uk";
+const PRIVACY_URL = "https://diarkaquantum.co.uk/privacy"; // must exist before launch
+const REPORT_URL = API_BASE.replace(/\/$/, "") + "/api/report";
 
 const FUNCTION_URL = API_BASE.replace(/\/$/, "") + "/api/pqc-check";
 const NO_BACKEND = !API_BASE && location.protocol === "file:";
@@ -291,6 +304,22 @@ function render(domain, d, sample){
     </div>
   </div>
 
+  ${sample ? "" : `
+  <div class="lead" id="lead">
+    <h3>Get the full report for <span class="dom">${esc(domain)}</span></h3>
+    <p>Every finding explained in plain English, where this endpoint sits against the NCSC 2028, 2031 and 2035
+      milestones, and the first three actions to take. Sent to your work email, ready to save as a PDF.</p>
+    <form class="field" id="leadForm" novalidate>
+      <input type="email" id="leadEmail" placeholder="you@yourcompany.co.uk" autocomplete="email" spellcheck="false" required>
+      <input type="text" id="leadHp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button type="submit" id="leadBtn">Email me the report</button>
+    </form>
+    <div class="leadmsg" id="leadMsg" role="status"></div>
+    <p class="fine">Work email only, one free report per email address. If you request the report, we keep your email
+      address and this result to send it and to follow up about it. You can opt out at any time.
+      <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy notice</a></p>
+  </div>`}
+
   <div class="cta">
     <h3>See your whole estate, scored and sequenced</h3>
     <p>A full Diarka PQC Readiness Audit delivers a complete cryptographic inventory, a four-axis risk
@@ -298,7 +327,59 @@ function render(domain, d, sample){
     <a href="mailto:${CONTACT_EMAIL}?subject=PQC%20Readiness%20Audit%20enquiry%20(${encodeURIComponent(domain)})">Book a scoping call</a>
     <a class="alt" href="https://${SITE}">${SITE}</a>
   </div>`;
+  if(!sample) wireLeadForm(domain);
   out.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+/* ---- lead capture: emailed full report ---- */
+const LEAD_MESSAGES = {
+  ALREADY_USED: "This email address has already received its free report. To check another domain, contact us.",
+  RECENTLY_SENT: "We sent your report a few minutes ago. Check your inbox and spam folder.",
+  RESEND_LIMIT: "We've already sent this report several times. Contact us and we'll send it directly.",
+  RATE_LIMIT: "Too many report requests from your network today. Contact us instead.",
+};
+const CONTACT_CODES = ["ALREADY_USED","RECENTLY_SENT","RESEND_LIMIT","RATE_LIMIT"];
+
+function wireLeadForm(domain){
+  const form = $("#leadForm"), email = $("#leadEmail"), btnL = $("#leadBtn"), msg = $("#leadMsg");
+  const say = (cls, html) => { msg.className = "leadmsg " + cls; msg.innerHTML = html; };
+  const contactLink = `<a href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("PQC Quick Check (" + domain + ")")}">${CONTACT_EMAIL}</a>`;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const value = email.value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(value)){
+      email.style.borderColor = "#E5484D"; say("err", "Enter a valid work email address."); return;
+    }
+    email.style.borderColor = "";
+    btnL.disabled = true; btnL.textContent = "Sending…"; say("", "");
+
+    let r, data = {};
+    try{
+      r = await fetch(REPORT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value, domain, website: $("#leadHp").value }),
+      });
+      data = await r.json().catch(() => ({}));
+    }catch(err){
+      btnL.disabled = false; btnL.textContent = "Email me the report";
+      say("err", "The report service didn't respond. Please try again in a moment."); return;
+    }
+
+    if(r.ok){
+      form.style.display = "none";
+      say("ok", data.status === "resent"
+        ? `We've sent your report again to <b>${esc(value)}</b>. If it isn't in your inbox within a few minutes, check your spam folder.`
+        : `Report sent to <b>${esc(value)}</b>. It should arrive within a few minutes. If it doesn't, check your spam folder.`);
+      return;
+    }
+
+    btnL.disabled = false; btnL.textContent = "Email me the report";
+    const text = esc(LEAD_MESSAGES[data.code] || data.error || "Something went wrong. Please try again.");
+    if(CONTACT_CODES.includes(data.code)) { form.style.display = "none"; say("err", text + " " + contactLink); }
+    else say("err", text);
+  });
 }
 
 /* ---- illustrative sample data (only when opened as a file with no API_BASE) ---- */

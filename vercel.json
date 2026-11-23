@@ -1,5 +1,8 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/pqc-check.html" }
+  ],
+  "crons": [
+    { "path": "/api/keepalive", "schedule": "17 6 * * *" }
   ]
 }

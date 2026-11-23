@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="https://diarkaquantum.co.uk/diarka-logo-header-180w.png">
+<title>PQC Quick Check report · Diarka Quantum</title>
+<style>
+  :root{
+    --navy:#0B1230; --card:#141d47; --card2:#0f1738;
+    --cyan:#1FB6C9; --blue:#3D6FF5; --white:#EAF0FF; --mute:#9FB0DA; --dim:#6B79A6;
+    --line:#23306A; --p1:#E5484D; --p2:#F5A623; --ok:#1FA971;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--navy);color:var(--white);
+       padding:30px 18px 60px;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:26px}
+  .top img{height:38px;display:block}
+  .btn{background:var(--cyan);color:var(--navy);font-weight:700;font-size:14px;border:none;
+       border-radius:9px;padding:11px 18px;cursor:pointer;text-decoration:none;display:inline-block}
+  .eyebrow{color:var(--cyan);letter-spacing:3px;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.3px;line-height:1.15;margin-bottom:6px;word-break:break-word}
+  .meta{color:var(--mute);font-size:13px;margin-bottom:22px}
+  .meta span{white-space:nowrap}
+  h2{font-size:17px;margin:30px 0 12px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .grade{display:flex;gap:16px;align-items:center}
+  .ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:18px;flex:0 0 auto}
+  .grade h3{font-size:18px;margin-bottom:4px}
+  .grade p{color:var(--mute);font-size:14px}
+  .finding{border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px;background:var(--card2);
+           break-inside:avoid}
+  .finding .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+  .finding .k{font-weight:700;font-size:14px}
+  .finding code{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12.5px;background:#ffffff10;padding:2px 7px;border-radius:5px}
+  .finding p{color:var(--mute);font-size:13.5px}
+  .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .t-vuln{background:#E5484D1A;color:#ff8b8e}
+  .t-warn{background:#F5A6231A;color:#ffc777}
+  .t-ok{background:#1FA9711A;color:#5fd6a6}
+  .t-info{background:#3D6FF51A;color:#9bb5ff}
+  ol.actions{padding-left:0;list-style:none;counter-reset:a}
+  ol.actions li{counter-increment:a;position:relative;padding:14px 16px 14px 54px;border:1px solid var(--line);
+        border-radius:12px;margin-bottom:10px;background:var(--card2);break-inside:avoid}
+  ol.actions li:before{content:counter(a);position:absolute;left:16px;top:13px;width:26px;height:26px;border-radius:50%;
+        background:var(--cyan);color:var(--navy);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  ol.actions b{display:block;margin-bottom:3px;font-size:14.5px}
+  ol.actions span{color:var(--mute);font-size:13.5px}
+  .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ms{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2);break-inside:avoid}
+  .ms .yr{color:var(--cyan);font-weight:800;font-size:20px}
+  .ms .what{font-weight:700;font-size:13.5px;margin:2px 0 6px}
+  .ms p{color:var(--mute);font-size:12.5px}
+  .note{color:var(--dim);font-size:12.5px;margin-top:12px}
+  .limits{color:var(--mute);font-size:13px}
+  .cta{margin-top:30px;border:1px solid var(--line);border-radius:14px;padding:20px;background:linear-gradient(180deg,#141d47,#0f1738)}
+  .cta h3{font-size:16px;margin-bottom:6px}
+  .cta p{color:var(--mute);font-size:13.5px;margin-bottom:14px}
+  footer{color:var(--dim);font-size:11.5px;margin-top:28px;text-align:center}
+  #state{color:var(--mute);padding:40px 0;text-align:center}
+  @media (max-width:600px){ .timeline{grid-template-columns:1fr} h1{font-size:23px} }
+
+  /* ---------- Print / Save as PDF: light theme, A4 ---------- */
+  @page{size:A4;margin:14mm 14mm 16mm}
+  @media print{
+    :root{--white:#0B1230;--mute:#3a4566;--dim:#6a7593;--line:#d5dbec;--card:#ffffff;--card2:#f6f8fd}
+    body{background:#fff;padding:0;font-size:12px}
+    .wrap{max-width:none}
+    .no-print{display:none!important}
+    .top{background:#0B1230;border-radius:10px;padding:12px 16px;margin-bottom:18px;
+         -webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .tag,.ring,ol.actions li:before,.ms .yr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .finding code{background:#eef1f8}
+    .t-vuln{color:#b3261e;background:#fde8e7}
+    .t-warn{color:#8a5a00;background:#fff1d6}
+    .t-ok{color:#0f6e48;background:#e1f5ec}
+    .t-info{color:#2747a8;background:#e6ecfd}
+    .cta{background:#f6f8fd}
+    h2{break-after:avoid}
+    a{color:#0B1230}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="https://diarkaquantum.co.uk"><img src="https://diarkaquantum.co.uk/diarka-logo-header-180w.png" alt="Diarka Quantum"></a>
+    <button class="btn no-print" id="pdf" style="display:none">Save as PDF</button>
+  </div>
+  <div id="state">Loading your report…</div>
+  <div id="report"></div>
+  <footer>
+    Diarka Quantum Ltd · United Kingdom · A quick check is not a full assessment.<br>
+    Algorithm-standardisation status accurate as of late 2026 (NIST and NCSC guidance continues to evolve).
+  </footer>
+</div>
+
+<script>
+/* API_BASE: "" when this page is served by the same Vercel project as the API.
+   Otherwise set it to the Vercel URL, e.g. "https://diarka-pqc-check.vercel.app". */
+const API_BASE = "";
+const CONTACT_EMAIL = "nageshj@diarkaquantum.co.uk";
+const PQ_GROUP = "X25519MLKEM768";
+
+const $ = s => document.querySelector(s);
+function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const TAG = {
+  vuln:'<span class="tag t-vuln">Quantum-vulnerable</span>',
+  ok:'<span class="tag t-ok">OK</span>',
+  safe:'<span class="tag t-ok">Quantum-safe</span>',
+  warn:'<span class="tag t-warn">Needs attention</span>',
+  unknown:'<span class="tag t-warn">Not confirmed</span>',
+  info:'<span class="tag t-info">For information</span>',
+};
+
+$("#pdf").addEventListener("click", () => window.print());
+load();
+
+async function load(){
+  const t = new URLSearchParams(location.search).get("t") || "";
+  if(!t){ return showState("This page needs the link from your report email."); }
+  let r, data;
+  try{
+    r = await fetch(API_BASE.replace(/\/$/,"") + "/api/report?t=" + encodeURIComponent(t));
+    data = await r.json();
+  }catch(e){ return showState("We couldn't load your report just now. Please refresh in a moment."); }
+  if(!r.ok){ return showState(esc(data && data.error || "We couldn't find this report.") +
+     `<br><br>Contact <a style="color:var(--cyan)" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> and we'll send it again.`); }
+  render(data);
+}
+
+function showState(html){ $("#state").innerHTML = html; }
+
+function daysUntil(iso){
+  if(!iso) return null;
+  const t = Date.parse(iso);
+  return isNaN(t) ? null : Math.floor((t - Date.now()) / 86400000);
+}
+
+function analyse(d){
+  const cert = d.cert || {};
+  const pq = d.pqcKeyExchange;
+  const tlsOld = d.tlsVersion && /^TLSv1(\.0|\.1)?$/.test(d.tlsVersion);
+  const tls12 = d.tlsVersion === "TLSv1.2";
+  const rsaWeak = /^RSA/.test(cert.keyType||"") && cert.keySize && cert.keySize < 2048;
+  const certClassical = /^(RSA|EC|ECDSA)/.test(cert.keyType||"");
+  const days = daysUntil(cert.validToISO);
+  const certFamily = /^RSA/.test(cert.keyType||"") ? "RSA" : cert.keyType === "EC" ? "ECDSA (elliptic curve)" : (cert.keyType || "an unknown algorithm");
+
+  const findings = [];
+
+  // Key exchange
+  const kx = (d.cipher && (d.cipher.kxFamily || d.cipher.name)) || "n/a";
+  if(pq === true) findings.push({k:"Key exchange", v:kx, tag:"safe",
+    text:`This endpoint accepts hybrid post-quantum key exchange (${PQ_GROUP}). When a visitor's browser also supports it, the session keys are protected against harvest-now-decrypt-later: traffic recorded today can't be decrypted later by a quantum computer.`});
+  else if(pq === false) findings.push({k:"Key exchange", v:kx, tag:"vuln",
+    text:`Session keys are agreed using classical methods only. Anyone who records this traffic today could decrypt it once a large enough quantum computer exists. This is the harvest-now-decrypt-later risk, and it applies now, not in 2035, for any data that must stay confidential for years.`});
+  else findings.push({k:"Key exchange", v:kx, tag:"unknown",
+    text:`We couldn't confirm whether this endpoint accepts post-quantum key exchange. ${esc(d.pqcNote||"")}`});
+
+  // Certificate
+  const certStr = cert.keyType ? `${cert.keyType}${cert.keySize ? "-"+cert.keySize : ""}` : "n/a";
+  if(certClassical) findings.push({k:"Certificate key", v:certStr, tag:"vuln",
+    text:`The certificate proves this site's identity using ${certFamily}, which a large quantum computer could forge. Unlike key exchange, this is not a harvest-now risk: forging needs the quantum computer at the moment of the attack. Post-quantum certificates are not yet in general use on the public web, so the action today is to plan for them, not replace this one.` +
+      (rsaWeak ? ` Separately, a ${cert.keySize}-bit RSA key is below today's 2048-bit minimum and should be replaced now.` : "")});
+  else findings.push({k:"Certificate key", v:certStr, tag:"info", text:"We couldn't classify the certificate's key type."});
+
+  // TLS version
+  if(tlsOld) findings.push({k:"TLS version", v:d.tlsVersion, tag:"warn",
+    text:"This version is deprecated and fails today's security baseline, before quantum risk is even considered. Disable it."});
+  else if(tls12) findings.push({k:"TLS version", v:d.tlsVersion, tag:"warn",
+    text:"TLS 1.2 is acceptable today, but post-quantum key exchange only works over TLS 1.3. This endpoint has to move to TLS 1.3 before it can be quantum-safe."});
+  else findings.push({k:"TLS version", v:d.tlsVersion || "n/a", tag:"ok",
+    text:"TLS 1.3 is the current version and the one post-quantum key exchange runs on."});
+
+  // Certificate validity
+  if(days !== null){
+    const until = new Date(cert.validToISO).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+    if(days < 0) findings.push({k:"Certificate validity", v:"Expired "+until, tag:"warn", text:"The certificate has expired. Visitors will see security warnings. Renew it now."});
+    else if(days <= 30) findings.push({k:"Certificate validity", v:"Expires "+until, tag:"warn", text:`The certificate expires in ${days} day${days===1?"":"s"}. Make sure renewal is automated.`});
+    else findings.push({k:"Certificate validity", v:"Valid until "+until, tag:"ok", text:"No action needed."});
+  }
+
+  if(cert.issuer) findings.push({k:"Issued by", v:cert.issuer, tag:"info",
+    text:"Your certificate authority's post-quantum roadmap will decide when you can move to post-quantum certificates."});
+
+  // Actions, most urgent first, top three
+  const actions = [];
+  if(tlsOld) actions.push(["Switch off TLS 1.0 and 1.1 on this endpoint","These fail today's baseline. It's usually a single configuration change on the web server, load balancer or CDN."]);
+  if(rsaWeak) actions.push(["Replace the certificate with a 2048-bit (or stronger) key","The current key is below today's minimum, regardless of quantum risk."]);
+  if(days !== null && days <= 30) actions.push(["Renew the certificate and automate renewal","It expires within 30 days."]);
+  if(pq === false && tls12) actions.push(["Move this endpoint to TLS 1.3, then enable hybrid post-quantum key exchange",`Post-quantum key exchange (${PQ_GROUP}) needs TLS 1.3. Check whether your web server, load balancer or CDN supports it; on current platforms this is often an upgrade or configuration change rather than a project.`]);
+  else if(pq === false) actions.push([`Enable hybrid post-quantum key exchange (${PQ_GROUP})`,"This removes the harvest-now-decrypt-later risk for traffic to this endpoint. On current web servers, load balancers and CDNs it is often an upgrade or configuration change rather than a project. Ask your hosting provider first."]);
+  else if(pq === null) actions.push([`Ask your hosting provider or CDN whether ${PQ_GROUP} is enabled`,"We couldn't confirm it from outside. It's a quick question with a yes or no answer."]);
+  else actions.push(["Confirm every other public endpoint has the same protection","This endpoint is protected. Subdomains, mail servers, APIs and VPN gateways are often on different platforms and may not be."]);
+  actions.push(["Start your cryptographic inventory","The NCSC expects organisations to know where they use cryptography and have a migration plan by 2028. This endpoint is one line of that inventory."]);
+  actions.push(["Identify data that must stay confidential beyond the 2030s","Records with a long confidentiality life (legal, health, financial, personal) are the ones harvest-now-decrypt-later puts at risk first. They decide what to migrate first."]);
+
+  let ring, colour, headline, blurb;
+  if(pq === true){ ring="PQ"; colour="var(--ok)"; headline="Post-quantum key exchange in place";
+    blurb="Traffic to this endpoint is protected against harvest-now-decrypt-later. The certificate is still classical, which is normal today."; }
+  else if(pq === false){ ring="!"; colour="var(--p1)"; headline="Not yet quantum-safe";
+    blurb="This endpoint uses only classical key exchange, which a sufficiently capable quantum computer is expected to break. Most public endpoints are in this position today."; }
+  else { ring="?"; colour="var(--p2)"; headline="Post-quantum support not confirmed";
+    blurb="We read the certificate and protocol, but couldn't confirm post-quantum key exchange from outside."; }
+
+  return {findings, actions:actions.slice(0,3), ring, colour, headline, blurb, pq};
+}
+
+function render(data){
+  const d = data.result || {};
+  const a = analyse(d);
+  const scanned = data.createdAt ? new Date(data.createdAt).toLocaleString("en-GB",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+  document.title = `PQC Quick Check report: ${data.domain} · Diarka Quantum`;
+
+  const m2031 = a.pq === true
+    ? "Key exchange on this endpoint is already done. The rest of the estate decides whether you meet this milestone."
+    : "Internet-facing services carrying sensitive data are likely to fall in the priority group, which makes this endpoint an early candidate.";
+
+  $("#state").style.display = "none";
+  $("#pdf").style.display = "inline-block";
+  $("#report").innerHTML = `
+    <div class="eyebrow">PQC Quick Check report</div>
+    <h1>${esc(data.domain)}</h1>
+    <div class="meta"><span>Scanned ${esc(scanned)}</span> &nbsp;·&nbsp; <span>Reference ${esc(data.reference||"")}</span></div>
+
+    <div class="panel"><div class="grade">
+      <div class="ring" style="background:color-mix(in srgb, ${a.colour} 12%, transparent);color:${a.colour};border:2px solid ${a.colour}">${a.ring}</div>
+      <div><h3>${a.headline}</h3><p>${a.blurb}</p></div>
+    </div></div>
+
+    <h2>Findings</h2>
+    ${a.findings.map(f => `<div class="finding">
+        <div class="head"><span class="k">${esc(f.k)}</span><code>${esc(f.v)}</code>${TAG[f.tag]||""}</div>
+        <p>${f.text}</p></div>`).join("")}
+
+    <h2>First three actions</h2>
+    <ol class="actions">${a.actions.map(x => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol>
+
+    <h2>Where this sits against the NCSC timeline</h2>
+    <div class="timeline">
+      <div class="ms"><div class="yr">2028</div><div class="what">Discovery and plan</div>
+        <p>A full cryptographic inventory and a migration plan. This endpoint is one line of that inventory; the rest of your estate is the larger part.</p></div>
+      <div class="ms"><div class="yr">2031</div><div class="what">Priority migrations done</div>
+        <p>${m2031}</p></div>
+      <div class="ms"><div class="yr">2035</div><div class="what">Full migration</div>
+        <p>Everything migrated, including certificates and signatures, which are still classical on almost every public site today.</p></div>
+    </div>
+
+    <h2>What this check can't see</h2>
+    <p class="limits">This report covers one public endpoint. It can't see your internal systems, other domains and subdomains,
+      mail servers, VPNs, code, document and code signing, key management, suppliers, or how long your data must stay
+      confidential. Those decide what to fix first, and they are what a full Diarka PQC Readiness Audit covers.</p>
+
+    <div class="cta">
+      <h3>Want your whole estate checked?</h3>
+      <p>A Diarka PQC Readiness Audit delivers a complete cryptographic inventory, a four-axis risk register and a
+        board-ready migration roadmap mapped to the NCSC 2028 to 2035 timeline. To check another domain, or to talk
+        through this report, get in touch.</p>
+      <a class="btn" href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("PQC report " + (data.reference||"") + " (" + data.domain + ")")}">Contact Diarka Quantum</a>
+      <span style="color:var(--mute);font-size:13px;margin-left:12px">${CONTACT_EMAIL}</span>
+    </div>`;
+}
+</script>
+</body>
+</html>
