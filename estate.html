@@ -73,6 +73,8 @@
     body{background:#fff;padding:14mm 14mm 16mm;font-size:12px}
     .timeline,.cta{break-inside:avoid}
     .timeline-wrap{break-inside:avoid}
+    .timeline{grid-template-columns:repeat(3,1fr)!important}
+    footer{margin-top:14px;font-size:10px}
     .wrap{max-width:none}
     .no-print{display:none!important}
     .top{background:#0B1230;border-radius:10px;padding:12px 16px;margin-bottom:18px;
@@ -99,7 +101,7 @@
   td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
   tr:last-child td{border-bottom:none}
   td:nth-child(2),td:nth-child(5){white-space:nowrap}
-  td.h{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12px;word-break:break-all;min-width:170px}
+  td.h{font-family:'DejaVu Sans Mono',Menlo,monospace;font-size:12px;overflow-wrap:anywhere;min-width:150px}
   td .tag{display:inline-block;margin:0 4px 4px 0}
   tr{break-inside:avoid}
   thead{display:table-header-group}
@@ -108,7 +110,7 @@
   .sub{color:var(--mute);font-size:13px;margin:-4px 0 10px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media (max-width:700px){ .tiles{grid-template-columns:repeat(2,1fr)} .cols{grid-template-columns:1fr} }
-  @media print{ .tiles{grid-template-columns:repeat(4,1fr)} th{background:#eef1f8} .n.ok,.n.bad,.n.warn{-webkit-print-color-adjust:exact;print-color-adjust:exact} .n.ok{color:#0f6e48} .n.bad{color:#b3261e} .n.warn{color:#8a5a00} }
+  @media print{ .tablewrap{overflow:visible} table{font-size:10.5px} td,th{padding:7px 8px} td.h{font-size:10.5px;min-width:0} .tiles{grid-template-columns:repeat(4,1fr)} th{background:#eef1f8} .n.ok,.n.bad,.n.warn{-webkit-print-color-adjust:exact;print-color-adjust:exact} .n.ok{color:#0f6e48} .n.bad{color:#b3261e} .n.warn{color:#8a5a00} }
 </style>
 </head>
 <body>
@@ -149,7 +151,15 @@ $("#pdf").addEventListener("click", () => window.print());
 load();
 
 async function load(){
-  const t = new URLSearchParams(location.search).get("t") || "";
+  // Take the private token out of the address bar once read, so it can't leak
+  // through the browser's printed page footer, screenshots or a copied URL.
+  // Kept in sessionStorage so a refresh in the same tab still works.
+  const KEY = "dq-estate-token";
+  let t = new URLSearchParams(location.search).get("t") || "";
+  try {
+    if (t) { sessionStorage.setItem(KEY, t); history.replaceState(null, "", location.pathname); }
+    else t = sessionStorage.getItem(KEY) || "";
+  } catch (e) {}
   if(!t) return showState("This page needs the link from your report email.");
   let r, data;
   try{ r = await fetch(API_BASE.replace(/\/$/,"") + "/api/estate?t=" + encodeURIComponent(t)); data = await r.json(); }
@@ -205,7 +215,7 @@ function render(data){
                       '<span class="tag t-ok">No issues</span>';
   const date = (iso) => iso ? new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "n/a";
   const rows = ok.map(h => `<tr>
-      <td class="h">${esc(h.host)}</td>
+      <td class="h">${esc(h.host).replace(/\./g, ".<wbr>")}</td>
       <td>${esc((h.tlsVersion||"n/a").replace("TLSv","TLS "))}</td>
       <td>${h.pq === true ? '<span class="tag t-ok">Post-quantum</span>' : esc(h.kx || "n/a")}</td>
       <td>${esc(h.certKey || "n/a")}</td>
@@ -250,7 +260,7 @@ function render(data){
       <div class="tile"><div class="n warn">${today}</div><div class="l">need attention today (expired, expiring, deprecated or weak)</div></div>
     </div></div>
 
-    <h2>First three actions</h2>
+    <h2>${["","First action","First two actions","First three actions"][actions.length]}</h2>
     <ol class="actions">${actions.map(x => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol>
 
     <h2>Every endpoint we checked</h2>

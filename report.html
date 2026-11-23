@@ -73,6 +73,8 @@
     body{background:#fff;padding:14mm 14mm 16mm;font-size:12px}
     .timeline,.cta{break-inside:avoid}
     .timeline-wrap{break-inside:avoid}
+    .timeline{grid-template-columns:repeat(3,1fr)!important}
+    footer{margin-top:14px;font-size:10px}
     .wrap{max-width:none}
     .no-print{display:none!important}
     .top{background:#0B1230;border-radius:10px;padding:12px 16px;margin-bottom:18px;
@@ -125,7 +127,15 @@ $("#pdf").addEventListener("click", () => window.print());
 load();
 
 async function load(){
-  const t = new URLSearchParams(location.search).get("t") || "";
+  // Take the private token out of the address bar once read, so it can't leak
+  // through the browser's printed page footer, screenshots or a copied URL.
+  // Kept in sessionStorage so a refresh in the same tab still works.
+  const KEY = "dq-report-token";
+  let t = new URLSearchParams(location.search).get("t") || "";
+  try {
+    if (t) { sessionStorage.setItem(KEY, t); history.replaceState(null, "", location.pathname); }
+    else t = sessionStorage.getItem(KEY) || "";
+  } catch (e) {}
   if(!t){ return showState("This page needs the link from your report email."); }
   let r, data;
   try{
